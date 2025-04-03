@@ -3,73 +3,108 @@
 
 from datetime import date
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
+# import seaborn as sns
+# import matplotlib.pyplot as plt
 import pickle
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import make_pipeline
-import argparse
 
+import argparse
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 def read_dataframe(filename):
-    df = pd.read_parquet(filename)
+    '''docstring'''
 
-    df['duration'] = df.lpep_dropoff_datetime - df.lpep_pickup_datetime
-    df.duration = df.duration.dt.total_seconds() / 60
+    logger.info(f'reading df from {filename}')
 
-    df = df[(df.duration >= 1) & (df.duration <= 60)]
+    try:
+        df = pd.read_parquet(filename)
 
-    categorical = ['PULocationID', 'DOLocationID']
-    df[categorical] = df[categorical].astype(str)
-        
-    return df
+        df['duration'] = df.lpep_dropoff_datetime - df.lpep_pickup_datetime
+        df.duration = df.duration.dt.total_seconds() / 60
+
+        df = df[(df.duration >= 1) & (df.duration <= 60)]
+
+        categorical = ['PULocationID', 'DOLocationID']
+        df[categorical] = df[categorical].astype(str)
+            
+        logger.debug(f'df shape: {df.shape}')
+        return df
+    
+    except Exception as e:
+        logger.error(f'error reading {filename}: {e}')
+        raise e
 
 def train(train_date: date, val_date: date, out_path: str):
+    '''
+    Trains a linear regression model to predict taxi trip duration.
 
-    base_url = 'https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_{year}-{month:02d}.parquet'
-    train_url = base_url.format(year=train_date.year, month=train_date.month)
-    val_url = base_url.format(year=val_date.year, month=val_date.month)
+    Downloads NYC green taxi trip data for the specified months, extracts relevant features, 
+    trains a model using a `DictVectorizer` and `LinearRegression`, evaluates it with RMSE, 
+    and saves the trained pipeline as a pickle file.
 
-    df_train = read_dataframe(train_url)
-    df_val = read_dataframe(val_url)
+    Args:
+        train_date (date): Training dataset month and year.
+        val_date (date): Validation dataset month and year.
+        out_path (str): Path to save the trained model.
 
-    print('len of dfs', len(df_train), len(df_val))
+    '''
+    try:
+        base_url = 'https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_{year}-{month:02d}.parquet'
+        train_url = base_url.format(year=train_date.year, month=train_date.month)
+        val_url = base_url.format(year=val_date.year, month=val_date.month)
 
+        logger.debug(f'training data url: {train_url}')
+        df_train = read_dataframe(train_url)
+        df_val = read_dataframe(val_url)
 
-    categorical = ['PULocationID', 'DOLocationID']
-    numerical = ['trip_distance']
-
-    train_dicts = df_train[categorical + numerical].to_dict(orient='records')
-    val_dicts = df_val[categorical + numerical].to_dict(orient='records')
-
-    target = 'duration'
-    y_train = df_train[target].values
-    y_val = df_val[target].values
-
-
-
-    pipeline = make_pipeline(DictVectorizer(), LinearRegression())
-
-    pipeline.fit(train_dicts, y_train)
-
-    y_pred = pipeline.predict(val_dicts)
-
-    print(f'MSE: {mean_squared_error(y_val, y_pred, squared=False)}')
+        logger.debug(f'len of dfs: { len(df_train)}, {len(df_val)}')
 
 
-    # sns.histplot(y_pred, kde=True, stat="density", color='blue', bins=25, label='prediction')
-    # sns.histplot(y_val, kde=True, stat="density", color='orange', bins=40, label='actual')
+        categorical = ['PULocationID', 'DOLocationID']
+        numerical = ['trip_distance']
 
-    # plt.legend()
+        train_dicts = df_train[categorical + numerical].to_dict(orient='records')
+        val_dicts = df_val[categorical + numerical].to_dict(orient='records')
 
-    with open(out_path, 'wb') as f_out:
-        pickle.dump(pipeline, f_out)
+        target = 'duration'
+        y_train = df_train[target].values
+        y_val = df_val[target].values
 
-if __name__ == '__main__':
 
+
+        pipeline = make_pipeline(DictVectorizer(), LinearRegression())
+
+        pipeline.fit(train_dicts, y_train)
+
+        y_pred = pipeline.predict(val_dicts)
+
+        logger.info(f'MSE: {mean_squared_error(y_val, y_pred, squared=False)}')
+
+
+        # sns.histplot(y_pred, kde=True, stat="density", color='blue', bins=25, label='prediction')
+        # sns.histplot(y_val, kde=True, stat="density", color='orange', bins=40, label='actual')
+
+        # plt.legend()
+
+        with open(out_path, 'wb') as f_out:
+            pickle.dump(pipeline, f_out)
+    
+    except Exception as e:
+        logger.error(f'error in training: {e}')
+        raise e
+
+
+def main():
     parser = argparse.ArgumentParser(description='train model based on specified dates and save it to given path')
     parser.add_argument('--train-date', required=True, help='format YYYY-MM')
     parser.add_argument('--val-date', required=True, help='format YYYY-MM')
@@ -91,6 +126,11 @@ if __name__ == '__main__':
     out_path = args.model_save_path
 
     train(train_date=train_date, val_date=vale_date, out_path=out_path)
+
+if __name__ == '__main__':
+    main()
+
+    
 
 
 
