@@ -1,19 +1,19 @@
 [project]
-name = "day-1"
+name = "duration-pred-serve"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+authors = [
+    { name = "FinnJost", email = "finnbjost@gmx.de" }
+]
 requires-python = ">=3.10"
 dependencies = [
+    "flask>=3.1.0",
     "numpy==1.26.4",
-    "pandas>=2.2.3",
-    "pyarrow>=19.0.1",
     "pytest>=8.3.5",
     "scikit-learn==1.2.2",
 ]
 
-[dependency-groups]
-dev = [
-    "jupyter>=1.1.1",
-    "seaborn>=0.13.2",
-]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

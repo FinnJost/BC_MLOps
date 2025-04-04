@@ -28,3 +28,18 @@ see the git commits
     - make it run via 'uv run python duration_prediction/train.py --train-date 2022-01 --val-date 2022-02 --model-save-path models/2022-01.bin'
 - create docstring (use chatgpt and/or autodicstring extension)
 - add logging
+
+
+### makefile
+- create makefile -> run training via 'make train'
+
+### add test
+- run 'uv add pytest'
+- create a tests folder
+    - create file 'test_train.py'
+- in folders 'duration_prediction' and 'tests' create empty files named '__init__.py'
+- run 'uv run pytest'
+
+### make it a module
+- move code to main.py file
+- run it via 'uv run python -m duration_prediction.main' instead of 'uv run python duration_prediction/main.py'
