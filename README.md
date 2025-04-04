@@ -43,3 +43,37 @@ see the git commits
 ### make it a module
 - move code to main.py file
 - run it via 'uv run python -m duration_prediction.main' instead of 'uv run python duration_prediction/main.py'
+
+
+
+## Day 2
+
+### create project
+
+- run 'uv init --lib --python 3.10 duration_pred_serve'
+- add dependencies from day 1: 'uv add scikit-learn==1.2.2 numpy==1.26.4'
+- add flask: 'uv add flask'
+- add pytest 'uv add pytest'
+- copy over model from day 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
